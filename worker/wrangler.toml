@@ -4,12 +4,12 @@ compatibility_date = "2026-08-30"
 
 [vars]
 # 使用英文逗号分隔多个允许访问接口的网站来源，不要保留末尾斜杠。
-ALLOWED_ORIGINS = "https://YOUR_GITHUB_NAME.github.io,http://localhost:8000"
+ALLOWED_ORIGINS = "https://violetwilde.github.io,http://localhost:8000"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "critters-leaderboard"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "e13116e2-97e9-4e90-894c-277cc96b2321"
 
 [[ratelimits]]
 name = "SUBMIT_LIMITER"
