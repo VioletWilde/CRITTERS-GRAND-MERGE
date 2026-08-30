@@ -32,7 +32,10 @@ class MemoryD1 {
 
   async run(sql, args) {
     if (sql.startsWith("INSERT INTO devices")) {
-      this.devices.set(args[0], { secret_hash: args[1], display_code: args[2] });
+      this.devices.set(args[0], { secret_hash: args[1], display_code: args[2], display_name: null, name_updated_at: null });
+    } else if (sql.startsWith("UPDATE devices SET display_name")) {
+      const device = this.devices.get(args[2]);
+      Object.assign(device, { display_name: args[0], name_updated_at: args[1] });
     } else if (sql.startsWith("INSERT INTO scores")) {
       const [device_id, mode, best_score, updated_at] = args;
       const key = `${device_id}:${mode}`, old = this.scores.get(key);
@@ -48,7 +51,7 @@ class MemoryD1 {
       .filter(row => row.mode === mode)
       .sort((a, b) => b.best_score - a.best_score || a.updated_at - b.updated_at)
       .slice(0, limit)
-      .map(row => ({ ...row, display_code: this.devices.get(row.device_id).display_code }));
+      .map(row => ({ ...row, ...this.devices.get(row.device_id) }));
     return { results };
   }
 }
@@ -79,6 +82,9 @@ function assert(condition, message) {
 const registered = await call("/device/register", "POST", { deviceId, deviceSecret });
 assert(registered.status === 200 && registered.body.deviceCode.startsWith("访客 "), "device registration failed");
 
+const named = await call("/device/name", "POST", { deviceId, deviceSecret, displayName: "林间旅人" });
+assert(named.status === 200 && named.body.displayName === "林间旅人", "nickname update failed");
+
 const first = await call("/score", "POST", { deviceId, deviceSecret, mode: "endless", score: 1500, drops: 10, durationMs: 60_000 });
 assert(first.status === 200 && first.body.bestScore === 1500, "score submission failed");
 
@@ -86,7 +92,13 @@ const lower = await call("/score", "POST", { deviceId, deviceSecret, mode: "endl
 assert(lower.status === 200 && lower.body.bestScore === 1500, "lower score replaced the best score");
 
 const board = await call(`/leaderboard?mode=endless&deviceId=${deviceId}&limit=50`);
-assert(board.status === 200 && board.body.entries[0].score === 1500 && board.body.mine.rank === 1, "leaderboard query failed");
+assert(board.status === 200 && board.body.entries[0].score === 1500 && board.body.entries[0].displayName === "林间旅人" && board.body.mine.rank === 1, "leaderboard query failed");
+
+const renamedTooSoon = await call("/device/name", "POST", { deviceId, deviceSecret, displayName: "第二个名称" });
+assert(renamedTooSoon.status === 429, "nickname cooldown was not enforced");
+
+const invalidName = await call("/device/name", "POST", { deviceId: "223e4567-e89b-12d3-a456-426614174000", deviceSecret, displayName: "<script>" });
+assert(invalidName.status === 400, "unsafe nickname was accepted");
 
 const invalid = await call("/score", "POST", { deviceId, deviceSecret, mode: "unknown", score: 1, drops: 1, durationMs: 60_000 });
 assert(invalid.status === 400, "invalid mode was accepted");

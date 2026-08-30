@@ -13,6 +13,14 @@
 7. 部署接口：`npm run deploy`。
 8. 将部署得到的 HTTPS 地址填入项目根目录 `leaderboard-config.js` 的 `leaderboardApi`。
 
+### 已有数据库升级昵称功能
+
+如果数据库已经初始化过，部署新版 Worker 前只执行一次：
+
+`npx wrangler d1 execute critters-leaderboard --remote --file=./migrations/0002_display_name.sql`
+
+全新数据库直接执行 `npm run db:migrate` 即可，不需要再运行上面的升级命令。
+
 部署后，访问 `https://你的接口地址/health` 应返回 `{"ok":true,...}`。排行榜页面会自动注册当前浏览器的匿名身份，并同步此前离线保存的最高成绩。
 
 ## 本地开发
@@ -23,6 +31,7 @@
 
 - 每个安装身份持有仅保存在本机的随机密钥，不能修改其他身份的成绩。
 - 每个身份、每种模式仅保留一个最高分，低分不会覆盖高分。
+- 玩家可以设置 2–12 字的排行榜昵称；匿名设备短码仍作为不可变身份保留，昵称每 24 小时最多修改一次。
 - Worker 校验模式、整数分数、投放次数、游戏时长和宽松的分数上限。
 - Rate Limiting binding 默认限制每个身份每分钟 12 次注册或提交请求。
 - POST 接口只允许 `ALLOWED_ORIGINS` 中的网站调用。

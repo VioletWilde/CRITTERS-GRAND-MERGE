@@ -27,7 +27,7 @@ export default {
 
         const secretHash = await sha256(body.deviceSecret);
         const existing = await env.DB.prepare(
-          "SELECT secret_hash, display_code FROM devices WHERE device_id = ?"
+          "SELECT secret_hash, display_code, display_name, name_updated_at FROM devices WHERE device_id = ?"
         ).bind(body.deviceId).first();
 
         if (existing && existing.secret_hash !== secretHash) {
@@ -41,7 +41,30 @@ export default {
           ).bind(body.deviceId, secretHash, deviceCode).run();
         }
 
-        return json({ ok: true, deviceCode }, 200, cors);
+        return json({
+          ok: true,
+          deviceCode,
+          displayName: existing?.display_name || "",
+          nameUpdatedAt: existing?.name_updated_at || null
+        }, 200, cors);
+      }
+
+      if (url.pathname === "/device/name" && request.method === "POST") {
+        const body = await readJson(request);
+        validateIdentity(body.deviceId, body.deviceSecret);
+        const displayName = normalizeDisplayName(body.displayName);
+        await rateLimit(env, `name:${body.deviceId}`);
+        const device = await authenticateDevice(env, body.deviceId, body.deviceSecret, true);
+        const now = Math.floor(Date.now() / 1000);
+        const cooldown = 86_400;
+        if (device.name_updated_at && now - Number(device.name_updated_at) < cooldown) {
+          const retryAfter = cooldown - (now - Number(device.name_updated_at));
+          return json({ error: "Nickname can only be changed once every 24 hours", retryAfter }, 429, cors);
+        }
+        await env.DB.prepare(
+          "UPDATE devices SET display_name = ?, name_updated_at = ? WHERE device_id = ?"
+        ).bind(displayName, now, body.deviceId).run();
+        return json({ ok: true, displayName, deviceCode: device.display_code, nameUpdatedAt: now }, 200, cors);
       }
 
       if (url.pathname === "/score" && request.method === "POST") {
@@ -76,7 +99,7 @@ export default {
         if (deviceId && !validDeviceId(deviceId)) return json({ error: "Invalid deviceId" }, 400, cors);
 
         const result = await env.DB.prepare(`
-          SELECT s.device_id, d.display_code, s.best_score
+          SELECT s.device_id, d.display_code, d.display_name, s.best_score
           FROM scores s
           JOIN devices d ON d.device_id = s.device_id
           WHERE s.mode = ?
@@ -87,6 +110,7 @@ export default {
         const entries = (result.results || []).map((row, index) => ({
           rank: index + 1,
           deviceCode: row.display_code,
+          displayName: row.display_name || row.display_code,
           score: row.best_score,
           isMine: row.device_id === deviceId
         }));
@@ -150,12 +174,21 @@ function validateScore(body) {
   if (body.score > body.drops * 10_000 + 5_000) throw new HttpError(400, "Score outside casual validation range");
 }
 
-async function authenticateDevice(env, deviceId, deviceSecret) {
+function normalizeDisplayName(value) {
+  const name = String(value ?? "").trim().replace(/\s+/g, " ");
+  const length = [...name].length;
+  if (length < 2 || length > 12) throw new HttpError(400, "Nickname must contain 2 to 12 characters");
+  if (!/^[\p{L}\p{N} _·-]+$/u.test(name)) throw new HttpError(400, "Nickname contains unsupported characters");
+  return name;
+}
+
+async function authenticateDevice(env, deviceId, deviceSecret, includeProfile = false) {
   const row = await env.DB.prepare(
-    "SELECT secret_hash FROM devices WHERE device_id = ?"
+    `SELECT secret_hash${includeProfile ? ", display_code, display_name, name_updated_at" : ""} FROM devices WHERE device_id = ?`
   ).bind(deviceId).first();
   if (!row) throw new HttpError(401, "Device is not registered");
   if (row.secret_hash !== await sha256(deviceSecret)) throw new HttpError(403, "Invalid device secret");
+  return row;
 }
 
 async function rateLimit(env, key) {

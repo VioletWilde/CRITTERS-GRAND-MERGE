@@ -4,6 +4,8 @@ CREATE TABLE IF NOT EXISTS devices (
   device_id TEXT PRIMARY KEY,
   secret_hash TEXT NOT NULL,
   display_code TEXT NOT NULL UNIQUE,
+  display_name TEXT,
+  name_updated_at INTEGER,
   created_at INTEGER NOT NULL
 );
 
