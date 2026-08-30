@@ -1,0 +1,5 @@
+
+worker/node_modules/
+node_modules/
+.dev.vars
+.env
