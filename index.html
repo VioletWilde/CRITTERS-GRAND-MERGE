@@ -34,6 +34,9 @@
     /* The game surface always keeps the same ratio as its 690 × 800 physics world. */
     .board-panel{align-self:center;justify-self:center;align-items:center;justify-content:center;width:min(100%,calc((100dvh - 108px)*.8625));height:auto}.canvas-wrap{flex:none;width:100%;aspect-ratio:690/800;contain:layout paint}.canvas-wrap>#board,.canvas-wrap>.play-overlay{position:absolute;inset:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;aspect-ratio:690/800}.hud-sound[aria-pressed="false"]{color:#9f8e76;filter:saturate(.2)}
     @media(max-width:760px){.app{padding:6px;gap:6px}header{min-height:42px;padding-bottom:6px}.brand h1{font-size:clamp(25px,7.4vw,31px);letter-spacing:.1em}.seal{width:31px;height:31px}.controls{display:none}.board-panel{width:min(100%,calc((100dvh - 62px)*.8625));padding:5px;border-radius:18px}.canvas-wrap{border-radius:16px}.hud-top{left:10px;right:10px;top:9px}.hud-score strong{font-size:32px}.hud-next{min-width:76px;padding:4px 7px 6px}.hud-next img{width:38px;height:38px}.hud-controls{gap:5px}.hud-menu{width:34px;height:34px;font-size:15px}.mode-badge{top:48px}.drop-clock{top:76px}.hud-combo{top:73px}.play-overlay .danger-chip{right:8px}}
+    /* Dual-mode objectives must remain readable instead of collapsing into an ellipsis. */
+    .dual-hud{grid-template-columns:112px minmax(230px,1fr) minmax(270px,1.15fr)}.task-box{min-width:0}.task-box>b{display:block;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.4}.task-box>span b{display:inline;margin-left:.25em;white-space:nowrap}.task-box small{line-height:1.35}
+    @media(max-width:760px){.dual-hud{grid-template-columns:92px minmax(0,1fr)}.dual-hud .task-box{grid-column:1/-1}.task-box>b{font-size:12px;line-height:1.35}.task-box>span b{font-size:inherit}}
   </style>
 </head>
 <body>
