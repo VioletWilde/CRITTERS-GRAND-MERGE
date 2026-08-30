@@ -1,0 +1,20 @@
+name = "critters-grand-merge-leaderboard"
+main = "src/index.js"
+compatibility_date = "2026-08-30"
+
+[vars]
+# 使用英文逗号分隔多个允许访问接口的网站来源，不要保留末尾斜杠。
+ALLOWED_ORIGINS = "https://YOUR_GITHUB_NAME.github.io,http://localhost:8000"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "critters-leaderboard"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+[[ratelimits]]
+name = "SUBMIT_LIMITER"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 12
+  period = 60
